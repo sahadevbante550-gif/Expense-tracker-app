@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Expense Tracker</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #f3f5f9; color: #20283a; }
+.container { max-width: 500px; margin: auto; }
+h1 { margin-bottom: 5px; }
+.subtitle { color: #737d90; margin-top: 0; }
+.balance { background: #253b75; color: white; padding: 24px; border-radius: 18px; margin: 22px 0; }
+.balance small { color: #d8e1ff; }
+.balance h2 { font-size: 32px; margin: 10px 0 0; }
+.summary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.card { background: white; padding: 17px; border-radius: 14px; }
+.card small { color: #737d90; }
+.card h3 { margin-bottom: 0; }
+.income { color: #159b68; }
+.expense { color: #e34e59; }
+form, .history { background: white; padding: 18px; border-radius: 14px; margin-top: 20px; }
+input, select, button { width: 100%; padding: 13px; margin-top: 10px; border: 1px solid #dce1ea; border-radius: 9px; font-size: 16px; }
+button { background: #3155a4; color: white; border: none; font-weight: bold; }
+.transaction { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-bottom: 1px solid #eee; padding: 13px 0; }
+.transaction small { color: #7b8494; }
+.delete { width: auto; padding: 8px 11px; margin: 0; background: #ffe8e8; color: #c43d3d; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>My Expense Tracker</h1>
+  <p class="subtitle">Manage your money smartly</p>
+  <div class="balance"><small>Total Balance</small><h2 id="balance">₹0.00</h2></div>
+  <div class="summary">
+    <div class="card"><small>Total Income</small><h3 class="income" id="income">₹0.00</h3></div>
+    <div class="card"><small>Total Expenses</small><h3 class="expense" id="expense">₹0.00</h3></div>
+  </div>
+  <form id="form">
+    <h3>Add Transaction</h3>
+    <input id="title" placeholder="Transaction name" required>
+    <input id="amount" type="number" min="0.01" step="0.01" placeholder="Amount (₹)" required>
+    <select id="type"><option value="expense">Expense</option><option value="income">Income</option></select>
+    <select id="category">
+      <option>Food</option><option>Travel</option><option>Shopping</option>
+      <option>Education</option><option>Bills</option><option>Salary</option><option>Other</option>
+    </select>
+    <button type="submit">Add Transaction</button>
+  </form>
+  <div class="history"><h3>Transaction History</h3><div id="list">No transactions yet.</div></div>
+</div>
+<script>
+let transactions = JSON.parse(localStorage.getItem("transactions") || "[]");
+const money = n => "₹" + n.toFixed(2);
+function render() {
+  const income = transactions.filter(t => t.type === "income").reduce((s,t) => s+t.amount, 0);
+  const expense = transactions.filter(t => t.type === "expense").reduce((s,t) => s+t.amount, 0);
+  document.getElementById("income").textContent = money(income);
+  document.getElementById("expense").textContent = money(expense);
+  document.getElementById("balance").textContent = money(income-expense);
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  if (!transactions.length) list.textContent = "No transactions yet.";
+  transactions.forEach(t => {
+    const item = document.createElement("div"); item.className = "transaction";
+    const details = document.createElement("div");
+    const name = document.createElement("strong"); name.textContent = t.title;
+    const info = document.createElement("small"); info.textContent = t.category + " • " + t.date;
+    details.append(name, document.createElement("br"), info);
+    const amount = document.createElement("strong"); amount.className = t.type;
+    amount.textContent = (t.type === "income" ? "+" : "-") + money(t.amount);
+    const del = document.createElement("button"); del.className = "delete"; del.textContent = "Delete"; del.type = "button";
+    del.addEventListener("click", () => { transactions = transactions.filter(x => x.id !== t.id); save(); });
+    item.append(details, amount, del); list.appendChild(item);
+  });
+}
+function save() { localStorage.setItem("transactions", JSON.stringify(transactions)); render(); }
+document.getElementById("form").addEventListener("submit", e => {
+  e.preventDefault();
+  const title = document.getElementById("title").value.trim();
+  const amount = Number(document.getElementById("amount").value);
+  if (!title || !Number.isFinite(amount) || amount <= 0) { alert("Please enter a valid name and amount."); return; }
+  transactions.unshift({
+    id: Date.now() + Math.random(), title, amount,
+    type: document.getElementById("type").value,
+    category: document.getElementById("category").value,
+    date: new Date().toLocaleDateString("en-IN")
+  });
+  e.target.reset(); save();
+});
+render();
+</script>
+</body>
+</html>
